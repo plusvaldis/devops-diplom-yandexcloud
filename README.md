@@ -36,7 +36,14 @@
 
 Предварительная подготовка к установке и запуску Kubernetes кластера.
 
-1. Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой с необходимыми и достаточными правами. Не стоит использовать права суперпользователя
+1. Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой с необходимыми и достаточными правами. Не стоит использовать права суперпользователя  
+Создан сервисный аккаунт в CLI yc. 
+```bash
+yc iam service-account create --name cherepanov
+yc resource-manager folder  add-access-binding --id b1gqnsno2p3pm085m9d6 --role editor --service-account-id ajenit04k8nlosvd750h
+yc iam service-account add-access-binding cherepanov --role editor --subject userAccount:ajenit04k8nlosvd750h
+yc iam key create --service-account-id ajenit04k8nlosvd750h --output key.json
+```
 2. Подготовьте [backend](https://www.terraform.io/docs/language/settings/backends/index.html) для Terraform:  
    а. Рекомендуемый вариант: S3 bucket в созданном ЯО аккаунте(создание бакета через TF)
    б. Альтернативный вариант:  [Terraform Cloud](https://app.terraform.io/)  
