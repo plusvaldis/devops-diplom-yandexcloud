@@ -1,5 +1,5 @@
 *swp
-private.auto.tfvars
+personal.auto.tfvars
 .terraform
 terraform.tfstate
 terraform.tfstate.backup
