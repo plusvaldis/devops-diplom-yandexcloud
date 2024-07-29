@@ -1,6 +1,13 @@
-*swp
+# Local .terraform directories and files
+**/.terraform/*
+.terraform*
+
+!.terraformrc
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# own secret vars store.
 personal.auto.tfvars
-.terraform
-terraform.tfstate
-terraform.tfstate.backup
-.terraform.lock.hcl
+id_ed25519.pub
