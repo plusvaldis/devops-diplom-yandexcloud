@@ -16,7 +16,7 @@ resource "yandex_vpc_subnet" "subnet-b" {
   route_table_id = yandex_vpc_route_table.rt.id
 }
 
-resource "yandex_vpc_subnet" "subnet-c" {
+resource "yandex_vpc_subnet" "subnet-d" {
   v4_cidr_blocks = var.vpc_resources.vpc_zone_d.v4_cidr_blocks
   zone           = var.vpc_resources.vpc_zone_d.zone
   network_id     = yandex_vpc_network.network-main.id

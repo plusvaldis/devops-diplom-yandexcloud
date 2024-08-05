@@ -62,3 +62,10 @@ variable "vpc_resources" {
     }
   }
 }
+
+//image
+variable "image" {
+  type = string
+  default = "ubuntu-2004-lts"
+  description = "image"
+}
