@@ -1,0 +1,95 @@
+---
+- name: docker-install
+  hosts: docker
+  gather_facts: false
+  become: true
+  vars:
+    ansible_ssh_user: ubuntu
+    registry: "{{ hostvars['registry'].registry_id}}"
+    token: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          39393539303735623137623964633932303564643566386239616362386133613937323332626138
+          3935353034666365313338313935326332666330616238340a386339623263643265613761626530
+          65323732316235663662666335656434316662326561663632646539306661633737623961633062
+          3432303238363939350a363838306239323536333438633231666161643938366233383338356136
+          61336337386436623633383132376138336534323534343230346232653737303666353933346437
+          34356437383765383334313665383131636330663836653561633562626535626366343965356630
+          326463656163323733623239383431343930
+  tasks:
+    - name: install dependencies
+      apt:
+        name: "{{item}}"
+        state: present
+        update_cache: yes
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
+    - name: add GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    - name: add docker repository to apt
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+    - name: install docker
+      apt:
+        name: "{{item}}"
+        state: latest
+        update_cache: yes
+      loop:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+    - name: check docker is active
+      service:
+        name: docker
+        state: started
+        enabled: yes
+    - name: Ensure group "docker" exists
+      ansible.builtin.group:
+        name: docker
+        state: present
+    - name: adding ubuntu to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+    - name: Install docker-compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.29.2/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 'u+x,g+x'
+    - name: Change file ownership, group and permissions
+      ansible.builtin.file:
+        path: /usr/local/bin/docker-compose
+        owner: ubuntu
+        group: ubuntu 
+    - name: Just get information about the repository whether or not it has already been cloned locally
+      ansible.builtin.git:
+        repo: 'https://github.com/plusvaldis/simple-nginx-dev.git'
+        dest: /home/ubuntu/app-nginx
+        clone: yes
+        update: yes
+    - name: Execute shell command
+      become: true
+      ansible.builtin.shell: echo {{token}} | docker login   --username oauth   --password-stdin   cr.yandex
+    - name: Build an image and push it to a private repo
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/app-nginx
+        name: cr.yandex/{{registry}}/nginx-diplom-dev
+        tag: v1
+        push: true
+        source: build
+    - name: Restart a container
+      community.docker.docker_container:
+        name: myapplication
+        image: cr.yandex/{{registry}}/nginx-diplom-dev:v1
+        state: started
+        ports:
+        # Publish container port 9000 as host port 8080
+        - "80:80"

@@ -1,0 +1,105 @@
+---
+- name: kuber-install
+  gather_facts: false
+  hosts: master-kuber
+  vars:
+    ansible_ssh_user: ubuntu
+    master: "{{ hostvars['master'].ansible_host}}"
+    worker1: "{{ hostvars['worker1'].ansible_host}}"
+    worker2: "{{ hostvars['worker2'].ansible_host}}"
+  become: yes
+  tasks:
+    - name: Update repositories cache
+      ansible.builtin.apt:
+        update_cache: yes
+    - name: Install the package "software-properties-common"
+      ansible.builtin.apt:
+        name: software-properties-common
+    - name: Add nginx stable repository from PPA and install its signing key on Ubuntu target
+      ansible.builtin.apt_repository:
+        repo: ppa:deadsnakes/ppa
+    - name: Update repositories cache
+      ansible.builtin.apt:
+        update_cache: yes
+    - name: Install the package "git pip python3.11"
+      ansible.builtin.apt:
+        pkg:
+        - git
+        - pip
+        - python3.11
+    - name: Download file from a file path
+      ansible.builtin.get_url:
+        url: https://bootstrap.pypa.io/get-pip.py
+        dest: /tmp/get-pip.py
+    - name: Execute shell command
+      ansible.builtin.shell: python3.11 /tmp/get-pip.py
+    - name: Just get information about the repository whether or not it has already been cloned locally
+      ansible.builtin.git:
+        repo: 'https://github.com/kubernetes-sigs/kubespray'
+        dest: /home/ubuntu/kubespray
+        clone: yes
+        update: yes
+    - name: Install specified python requirements
+      ansible.builtin.pip:
+        requirements: /home/ubuntu/kubespray/requirements.txt
+    - name: Execute shell command
+      become: true
+      ansible.builtin.shell: cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster
+    #- name: Execute shell command
+    #  become: true
+    #  ansible.builtin.shell: declare -a IPS=({{master}} {{worker1}} {{worker2}})
+    - name: Execute shell command
+      become: true
+      ansible.builtin.shell: python3.11 -m pip install ruamel.yaml
+    #- name: Execute shell command
+    #  become: true
+    #  ansible.builtin.shell: CONFIG_FILE=inventory/mycluster/hosts.yaml python3.11 contrib/inventory_builder/inventory.py ${IPS[@]}
+
+    - name: create hosts file
+      become: true
+      copy:
+        content: |
+          all:
+            hosts:
+              node1:
+                ansible_host: {{master}}
+                ip: {{master}}
+                access_ip: {{master}}
+              node2:
+                ansible_host: {{worker1}}
+                ip: {{worker1}}
+                access_ip: {{worker1}}
+              node3:
+                ansible_host: {{worker2}}
+                ip: {{worker2}}
+                access_ip: {{worker2}}
+            children:
+              kube_control_plane:
+                hosts:
+                  node1:
+              kube_node:
+                hosts:
+                  node2:
+                  node3:
+              etcd:
+                hosts:
+                  node1:
+              k8s_cluster:
+                children:
+                  kube_control_plane:
+                  kube_node:
+              calico_rr:
+                hosts: {}
+        dest: /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml      
+    - name: Replace id
+      become: true
+      template:
+        src=../secret/id_ed25519
+        dest=/home/ubuntu/.ssh/id_ed25519
+    - name: Recursively change ownership of a directory
+      ansible.builtin.file:
+        path: /home/ubuntu/kubespray
+        state: directory
+        recurse: yes
+        owner: ubuntu
+        group: ubuntu

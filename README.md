@@ -36,13 +36,29 @@
 
 Предварительная подготовка к установке и запуску Kubernetes кластера.
 
-1. Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой с необходимыми и достаточными правами. Не стоит использовать права суперпользователя
+1. Создайте сервисный аккаунт, который будет в дальнейшем использоваться Terraform для работы с инфраструктурой с необходимыми и достаточными правами. Не стоит использовать права суперпользователя  
+Создан сервисный аккаунт в CLI yc. 
+```bash
+yc iam service-account create --name cherepanov
+yc resource-manager folder  add-access-binding --id b1gqnsno2p3pm085m9d6 --role editor --service-account-id ajenit04k8nlosvd750h
+yc iam service-account add-access-binding cherepanov --role editor --subject userAccount:ajenit04k8nlosvd750h
+yc iam key create --service-account-id ajenit04k8nlosvd750h --output key.json
+```  
+
 2. Подготовьте [backend](https://www.terraform.io/docs/language/settings/backends/index.html) для Terraform:  
    а. Рекомендуемый вариант: S3 bucket в созданном ЯО аккаунте(создание бакета через TF)
    б. Альтернативный вариант:  [Terraform Cloud](https://app.terraform.io/)  
-3. Создайте VPC с подсетями в разных зонах доступности.
-4. Убедитесь, что теперь вы можете выполнить команды `terraform destroy` и `terraform apply` без дополнительных ручных действий.
-5. В случае использования [Terraform Cloud](https://app.terraform.io/) в качестве [backend](https://www.terraform.io/docs/language/settings/backends/index.html) убедитесь, что применение изменений успешно проходит, используя web-интерфейс Terraform cloud.
+В данном пункте, я предпочел выбрать вариант а, создав отдельную конфигурацию, для автоматического деплоя бэкенда.
+[backend.tf](https://github.com/plusvaldis/devops-diplom-yandexcloud/tree/main/diplom_bucket "backend")  
+
+3. Создайте VPC с подсетями в разных зонах доступности.  
+![network](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/one-point/network1.png)  
+![network](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/one-point/network2.png)  
+
+4. Убедитесь, что теперь вы можете выполнить команды `terraform destroy` и `terraform apply` без дополнительных ручных действий.  
+
+5. В случае использования [Terraform Cloud](https://app.terraform.io/) в качестве [backend](https://www.terraform.io/docs/language/settings/backends/index.html) убедитесь, что применение изменений успешно проходит, используя web-интерфейс Terraform cloud.  
+![network](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/one-point/backend.png)  
 
 Ожидаемые результаты:
 
@@ -66,9 +82,15 @@
   
 Ожидаемый результат:
 
-1. Работоспособный Kubernetes кластер.
-2. В файле `~/.kube/config` находятся данные для доступа к кластеру.
-3. Команда `kubectl get pods --all-namespaces` отрабатывает без ошибок.
+1. Работоспособный Kubernetes кластер.  
+Во втором блоке, я решил самостоятельно установить kubernetes кластер, применив практику с лекций. Развертывание кластера, происходит в момент создания инфраструктуры, после того как вся инфраструктура настроена и доступна, выполняется вызов ansible скрипта, воспользовался kubespray установкой. 
+[Kubernetes-install.yml](https://github.com/plusvaldis/devops-diplom-yandexcloud/tree/main/terraform/ansible/kubernetes_install.yml "backend")  
+
+2. В файле `~/.kube/config` находятся данные для доступа к кластеру.  
+![kubeconfig](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/two-point/kubeconfig.png)  
+
+3. Команда `kubectl get pods --all-namespaces` отрабатывает без ошибок.  
+![kubeget](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/two-point/kubeget.png)  
 
 ---
 ### Создание тестового приложения
@@ -85,8 +107,13 @@
 
 Ожидаемый результат:
 
-1. Git репозиторий с тестовым приложением и Dockerfile.
-2. Регистри с собранным docker image. В качестве регистри может быть DockerHub или [Yandex Container Registry](https://cloud.yandex.ru/services/container-registry), созданный также с помощью terraform.
+1. Git репозиторий с тестовым приложением и Dockerfile.  
+[GitHub repo my app](https://github.com/plusvaldis/simple-nginx-dev "my-app")  
+
+2. Регистри с собранным docker image. В качестве регистри может быть DockerHub или [Yandex Container Registry](https://cloud.yandex.ru/services/container-registry), созданный также с помощью terraform.  
+Сборка приложения и пуш в репозиторий происходит во время создания инфраструктуры.  
+[Ansible скрипт настройки ВМ и пуш собранного приложения в гит](https://github.com/plusvaldis/devops-diplom-yandexcloud/tree/main/terraform/ansible/docker_install.yml "my-app")  
+![regystry](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/free-point/registry.png)  
 
 ---
 ### Подготовка cистемы мониторинга и деплой приложения
@@ -104,10 +131,17 @@
 2. Если на первом этапе вы не воспользовались [Terraform Cloud](https://app.terraform.io/), то задеплойте и настройте в кластере [atlantis](https://www.runatlantis.io/) для отслеживания изменений инфраструктуры. Альтернативный вариант 3 задания: вместо Terraform Cloud или atlantis настройте на автоматический запуск и применение конфигурации terraform из вашего git-репозитория в выбранной вами CI-CD системе при любом комите в main ветку. Предоставьте скриншоты работы пайплайна из CI/CD системы.
 
 Ожидаемый результат:
-1. Git репозиторий с конфигурационными файлами для настройки Kubernetes.
-2. Http доступ к web интерфейсу grafana.
-3. Дашборды в grafana отображающие состояние Kubernetes кластера.
-4. Http доступ к тестовому приложению.
+1. Git репозиторий с конфигурационными файлами для настройки Kubernetes.  
+При выполнении данного блока, воспользовался пакетом который указан в способах полнения kube-prometheus, который разворачивается во время настройки инфраструктуры. С помощью ansible скрипта. [Ansible скрипт deploy monitoring](https://github.com/plusvaldis/devops-diplom-yandexcloud/tree/main/terraform/ansible/monitoring_install.yml "monitoring")  
+
+2. Http доступ к web интерфейсу grafana.  
+[Grafana](http://89.169.137.163:32000/ "web app")  
+
+3. Дашборды в grafana отображающие состояние Kubernetes кластера.  
+![monitoring](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/four-point/grafana.png)  
+
+4. Http доступ к тестовому приложению.  
+![monitoring](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/four-point/myapp-nginx.png)  
 
 ---
 ### Установка и настройка CI/CD
@@ -123,18 +157,70 @@
 
 Ожидаемый результат:
 
-1. Интерфейс ci/cd сервиса доступен по http.
-2. При любом коммите в репозиторие с тестовым приложением происходит сборка и отправка в регистр Docker образа.
-3. При создании тега (например, v1.0.0) происходит сборка и отправка с соответствующим label в регистри, а также деплой соответствующего Docker образа в кластер Kubernetes.
+1. Интерфейс ci/cd сервиса доступен по http.  
+
+Для выполнения следующих пунктов, потребовалось создать:
+[Jenkinsfile](https://github.com/plusvaldis/simple-nginx-dev/blob/main/Jenkinsfile "Jenkinsfile")  
+Добавить необходимые Credentials:
+![cred](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/cred.png)  
+Добавить в настройки Jenkins сервер GitHub  
+![githubauth](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/githubauth.png)  
+
+
+2. При любом коммите в репозиторие с тестовым приложением происходит сборка и отправка в регистр Docker образа.  
+При любом коммите в репозиторие с тестовым приложением происходит сборка и отправка в регистр Docker образа.  
+
+Автоматический запуск pipeline выполняется с помощью настройки webhooks в репозитории приложения. По определению наличия изменений в ветке main, со стороны jenkins, создан Мультиконфигурационный проект, где указан наш github репозиторий, так же настроены правила для обнаружения в tag изменений.  
+![multiconfig](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/multiconfig1.png)   
+![multiconfig](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/multiconfig2.png)
+Создал понимание инфраструктуры такое как: если выполняется push в ветке main, то считаем что это тестовое приложение, выполняем сборку и отправку в regystry с соотвествующим label (branch_name+git_commit), а также последующий деплой в staging пространстве.  
+![autodeploypush](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/pushmain.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeployprod1.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeployprod2.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeployprod3.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeployprod4.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeployprod5.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeployprod6.png)  
+
+3. При создании тега (например, v1.0.0) происходит сборка и отправка с соответствующим label в регистри, а также деплой соответствующего Docker образа в кластер Kubernetes.  
+Если же, происходит сборка например тега v.*, считаем что это релизное приложение для prod. выполняем также сборку приложения и отправляем в registry с соответствующим label (tag_name), после происходит сборка в пространстве prod.  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeploytest1.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeploytest2.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeploytest3.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeploytest4.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeploytest5.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeploytest6.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeploytest7.png)  
+![autodeploy](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/autodeploytest8.png)  
+
+
+
 
 ---
 ## Что необходимо для сдачи задания?
 
-1. Репозиторий с конфигурационными файлами Terraform и готовность продемонстрировать создание всех ресурсов с нуля.
-2. Пример pull request с комментариями созданными atlantis'ом или снимки экрана из Terraform Cloud или вашего CI-CD-terraform pipeline.
-3. Репозиторий с конфигурацией ansible, если был выбран способ создания Kubernetes кластера при помощи ansible.
-4. Репозиторий с Dockerfile тестового приложения и ссылка на собранный docker image.
-5. Репозиторий с конфигурацией Kubernetes кластера.
-6. Ссылка на тестовое приложение и веб интерфейс Grafana с данными доступа.
-7. Все репозитории рекомендуется хранить на одном ресурсе (github, gitlab)
+1. Репозиторий с конфигурационными файлами Terraform и готовность продемонстрировать создание всех ресурсов с нуля.  
+[Terraform on Github](https://github.com/plusvaldis/devops-diplom-yandexcloud/tree/main/terraform "github")  
+
+2. Пример pull request с комментариями созданными atlantis'ом или снимки экрана из Terraform Cloud или вашего CI-CD-terraform pipeline.  
+
+3. Репозиторий с конфигурацией ansible, если был выбран способ создания Kubernetes кластера при помощи ansible.  
+[Ansible on Github for kubespray](https://github.com/plusvaldis/kube-prometheus "github")  
+
+4. Репозиторий с Dockerfile тестового приложения и ссылка на собранный docker image.  
+[My-app on GitHub](https://github.com/plusvaldis/simple-nginx-dev "github")  
+
+5. Репозиторий с конфигурацией Kubernetes кластера.  
+
+
+6. Ссылка на тестовое приложение и веб интерфейс Grafana с данными доступа.  
+[Website myapp создание из блока Подготовка cистемы мониторинга и деплой приложения](http://89.169.153.114 "web app")  
+[Website myapp-testing-namespace создание из блока Подготовка cистемы мониторинга и деплой приложения](http://89.169.137.163:32081/ "web app")  
+[Website myapp-production-namespace создание из блока Подготовка cистемы мониторинга и деплой приложения](http://89.169.137.163:32080/ "web app")  
+[Grafana](http://89.169.137.163:32000/ "web app")  
+Login: teacher Pass: teacher123
+
+
+7. Все репозитории рекомендуется хранить на одном ресурсе (github, gitlab)  
+
 
