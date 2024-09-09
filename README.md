@@ -135,7 +135,7 @@ yc iam key create --service-account-id ajenit04k8nlosvd750h --output key.json
 При выполнении данного блока, воспользовался пакетом который указан в способах полнения kube-prometheus, который разворачивается во время настройки инфраструктуры. С помощью ansible скрипта. [Ansible скрипт deploy monitoring](https://github.com/plusvaldis/devops-diplom-yandexcloud/tree/main/terraform/ansible/monitoring_install.yml "monitoring")  
 
 2. Http доступ к web интерфейсу grafana.  
-[Grafana](http://89.169.137.163:30000/ "web app")  
+[Grafana](http://89.169.143.7:30000/ "web app")  
 
 3. Дашборды в grafana отображающие состояние Kubernetes кластера.  
 ![monitoring](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/four-point/grafana.png)  
