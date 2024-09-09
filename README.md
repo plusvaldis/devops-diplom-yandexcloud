@@ -141,7 +141,8 @@ yc iam key create --service-account-id ajenit04k8nlosvd750h --output key.json
 ![monitoring](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/four-point/grafana.png)  
 
 4. Http доступ к тестовому приложению.  
-![monitoring](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/four-point/myapp-nginx.png)  
+![monitoring](https://github.com/plusvaldis/devops-diplom-yandexcloud/blob/main/images/four-point/myapp-nginx.png)
+[Website myapp](http://89.169.141.166 "web app")  
 
 ---
 ### Установка и настройка CI/CD
@@ -214,7 +215,7 @@ yc iam key create --service-account-id ajenit04k8nlosvd750h --output key.json
 
 
 6. Ссылка на тестовое приложение и веб интерфейс Grafana с данными доступа.  
-[Website myapp создание из блока Подготовка cистемы мониторинга и деплой приложения](http://89.169.153.114 "web app")  
+[Website myapp создание из блока Подготовка cистемы мониторинга и деплой приложения](http://89.169.141.166 "web app")  
 [Website myapp-testing-namespace создание из блока Подготовка cистемы мониторинга и деплой приложения](http://89.169.143.7:32080/ "web app")  
 [Website myapp-production-namespace создание из блока Подготовка cистемы мониторинга и деплой приложения](http://89.169.143.7:32081/ "web app")  
 [Grafana](http://89.169.143.7:30000/ "web app")  
