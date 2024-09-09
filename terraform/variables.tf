@@ -25,6 +25,27 @@ variable "default_zone" {
   description = "https://cloud.yandex.ru/docs/overview/concepts/geo-scope"
 }
 
+variable "access_key_bucket" {
+  type    = string
+  default = null
+}
+
+variable "secret_key_bucket" {
+  type    = string
+  default = null
+}
+
+variable "secret_key_bucket_S3" {
+  type    = string
+  default = null
+}
+
+variable "token" {
+  type    = string
+  default = null
+}
+
+
 //storage
 variable "ac_role" {
   type        = string
